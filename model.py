@@ -63,7 +63,7 @@ X_2024_25_reshaped = X_2024_25_scaled.reshape((X_2024_25_scaled.shape[0], 1, X_2
 predictions = model.predict(X_2024_25_reshaped)
 
 # Add predictions to the DataFrame
-season_2024_25['Predicted_Fantasy_Score'] = predictions
+season_2024_25.loc[:, 'Predicted_Fantasy_Score'] = predictions
 
 # Rank players by position
 rankings = season_2024_25.groupby('Pos_x').apply(lambda x: x.sort_values('Predicted_Fantasy_Score', ascending=False))
