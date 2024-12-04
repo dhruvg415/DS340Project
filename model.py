@@ -20,7 +20,8 @@ df['Fantasy_Points'] = (
 )
 
 # Select relevant features
-features = ['PTS', 'TRB', 'AST', 'STL', 'BLK', 'TOV', 'FG%', 'FT%', 'PER', 'USG%', 'BPM']
+features = ['PTS', 'TRB', 'AST', 'STL', 'BLK', 'TOV%', 'FG%', 'FT%', 'PER', 'USG%', 'BPM',
+            'TS%', 'ORtg', 'MP', 'PF']
 X = df[features]
 y = df['Fantasy_Points']
 
@@ -55,7 +56,7 @@ test_loss = model.evaluate(X_test, y_test, verbose=0)
 print(f'Test Loss: {test_loss}')
 
 # Make predictions for the 2024-25 season
-season_2024_25 = df[df['Season'] == '2024-25']
+season_2024_25 = df[df['Season'] == '2024-25'].copy()
 X_2024_25 = season_2024_25[features]
 X_2024_25_scaled = scaler.transform(X_2024_25)
 X_2024_25_reshaped = X_2024_25_scaled.reshape((X_2024_25_scaled.shape[0], 1, X_2024_25_scaled.shape[1]))
@@ -63,12 +64,15 @@ X_2024_25_reshaped = X_2024_25_scaled.reshape((X_2024_25_scaled.shape[0], 1, X_2
 predictions = model.predict(X_2024_25_reshaped)
 
 # Add predictions to the DataFrame
-season_2024_25.loc[:, 'Predicted_Fantasy_Score'] = predictions
+season_2024_25['Predicted_Fantasy_Score'] = predictions
 
 # Rank players by position
-rankings = season_2024_25.groupby('Pos_x').apply(lambda x: x.sort_values('Predicted_Fantasy_Score', ascending=False))
+rankings = season_2024_25.groupby('Pos_x', group_keys=False).apply(lambda x: x.sort_values('Predicted_Fantasy_Score', ascending=False))
 
 # Display top 10 players for each position
-for position in rankings.index.get_level_values(0).unique():
+for position in rankings['Pos_x'].unique():
     print(f"\nTop 10 {position}s for 2024-25 Season:")
-    print(rankings.loc[position][['Player', 'Predicted_Fantasy_Score']].head(10))
+    print(rankings[rankings['Pos_x'] == position][['Player', 'Predicted_Fantasy_Score']].head(10))
+
+# Write predictions to CSV
+rankings[['Player', 'Pos_x', 'Season', 'Fantasy_Points', 'Predicted_Fantasy_Score']].to_csv('nba_fantasy_predictions_2024_25.csv', index=False)
