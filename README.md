@@ -1,2 +1,2 @@
 # DS340Project
-DS 340W Project for the fall 2024 semester
+This project explores different deep learning methods to analyze historical and current basketball player data and come up with positional rankings for the 2024 fantasy basketball season.
