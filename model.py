@@ -6,42 +6,50 @@ from keras._tf_keras.keras.models import Sequential
 from keras._tf_keras.keras.layers import LSTM, Dense, Dropout
 from keras._tf_keras.keras.optimizers import Adam
 
-# Load the data
-df = pd.read_csv('nba_2020_2024_merged_stats.csv')
+#Load training data
+train_df = pd.read_csv('nba_2020_2024_merged_stats.csv')
 
-# Calculate Fantasy Points
-df['Fantasy_Points'] = (
-    df['PTS'] +
-    1.2 * df['TRB'] +
-    1.5 * df['AST'] +
-    3 * df['STL'] +
-    3 * df['BLK'] -
-    1 * df['TOV']
-)
+# Load prediction data
+current_totals = pd.read_csv('nba_2024-25_totals.csv')
+current_advanced = pd.read_csv('nba_2024-25_adv.csv')
 
-# Select relevant features
-features = ['PTS', 'TRB', 'AST', 'STL', 'BLK', 'TOV%', 'FG%', 'FT%', 'PER', 'USG%', 'BPM',
-            'TS%', 'ORtg', 'MP', 'PF']
-X = df[features]
-y = df['Fantasy_Points']
+# Merge totals and advanced stats FOR 2024-25 SEASON
+prediction_df = pd.merge(current_totals, current_advanced, on=['Player', 'Season', 'Team', 'Pos'], suffixes=('_totals', '_adv'))
 
-# Normalize the features
+# Calculate Fantasy Points for training data
+def calculate_fantasy_points(df):
+    df['Fantasy_Points'] = (
+        df['PTS'] +
+        1.2 * df['TRB'] +
+        1.5 * df['AST'] +
+        3 * df['STL'] +
+        3 * df['BLK'] -
+        1 * df['TOV']
+    )
+    return df
+
+train_df = calculate_fantasy_points(train_df)
+prediction_df = calculate_fantasy_points(prediction_df)
+
+# Select relevant features for training
+features = ['PTS', 'TRB', 'AST', 'STL', 'BLK', 'TOV', 'FG%', 'FT%', 'PER', 'USG%', 'BPM', 'MP']
+X_train = train_df[features]
+y_train = train_df['Fantasy_Points']
+
+# Normalize training features
 scaler = MinMaxScaler()
-X_scaled = scaler.fit_transform(X)
+X_train_scaled = scaler.fit_transform(X_train)
 
-# Reshape input data for LSTM (samples, time steps, features)
-X_reshaped = X_scaled.reshape((X_scaled.shape[0], 1, X_scaled.shape[1]))
+# Reshape input data for LSTM
+X_train_reshaped = X_train_scaled.reshape((X_train_scaled.shape[0], 1, X_train_scaled.shape[1]))
 
-# Split the data
-X_train, X_test, y_train, y_test = train_test_split(X_reshaped, y, test_size=0.2, random_state=42)
-
-# Define the LSTM model
+# Define LSTM model
 model = Sequential([
-    LSTM(64, input_shape=(1, len(features)), return_sequences=True),
+    LSTM(128, input_shape=(1, len(features)), return_sequences=True),
     Dropout(0.2),
-    LSTM(32),
+    LSTM(64),
     Dropout(0.2),
-    Dense(16, activation='relu'),
+    Dense(32, activation='relu'),
     Dense(1)
 ])
 
@@ -49,30 +57,28 @@ model = Sequential([
 model.compile(optimizer=Adam(learning_rate=0.001), loss='mean_squared_error')
 
 # Train the model
-history = model.fit(X_train, y_train, epochs=100, batch_size=32, validation_split=0.2, verbose=1)
+model.fit(X_train_reshaped, y_train, epochs=100, batch_size=64, validation_split=0.2, verbose=1)
 
-# Evaluate the model
-test_loss = model.evaluate(X_test, y_test, verbose=0)
-print(f'Test Loss: {test_loss}')
+# Ensure consistent feature set with training data
+X_pred = prediction_df[features]
 
-# Make predictions for the 2024-25 season
-season_2024_25 = df[df['Season'] == '2024-25'].copy()
-X_2024_25 = season_2024_25[features]
-X_2024_25_scaled = scaler.transform(X_2024_25)
-X_2024_25_reshaped = X_2024_25_scaled.reshape((X_2024_25_scaled.shape[0], 1, X_2024_25_scaled.shape[1]))
+# Normalize prediction features using the same scaler
+X_pred_scaled = scaler.transform(X_pred)
 
-predictions = model.predict(X_2024_25_reshaped)
+# Reshape prediction data for LSTM
+X_pred_reshaped = X_pred_scaled.reshape((X_pred_scaled.shape[0], 1, X_pred_scaled.shape[1]))
 
-# Add predictions to the DataFrame
-season_2024_25['Predicted_Fantasy_Score'] = predictions
+# Make predictions
+predictions = model.predict(X_pred_reshaped)
+prediction_df['Predicted_Fantasy_Score'] = predictions
 
-# Rank players by position
-rankings = season_2024_25.groupby('Pos_x', group_keys=False).apply(lambda x: x.sort_values('Predicted_Fantasy_Score', ascending=False))
+rankings = prediction_df.groupby('Pos').apply(lambda x: x.sort_values('Predicted_Fantasy_Score', ascending=False))
 
-# Display top 10 players for each position
-for position in rankings['Pos_x'].unique():
+for position in rankings.index.get_level_values(0).unique():
     print(f"\nTop 10 {position}s for 2024-25 Season:")
-    print(rankings[rankings['Pos_x'] == position][['Player', 'Predicted_Fantasy_Score']].head(10))
+    print(rankings.loc[position][['Player', 'Predicted_Fantasy_Score']].head(10))
 
-# Write predictions to CSV
-rankings[['Player', 'Pos_x', 'Season', 'Fantasy_Points', 'Predicted_Fantasy_Score']].to_csv('nba_fantasy_predictions_2024_25.csv', index=False)
+# Save predictions to a CSV file
+prediction_df[['Player', 'Team', 'Pos', 'Predicted_Fantasy_Score']].to_csv('nba_fantasy_predictions_2024_25.csv', index=False)
+
+print("Predictions saved to nba_fantasy_predictions_2024_25.csv")
