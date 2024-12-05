@@ -80,5 +80,3 @@ for position in rankings.index.get_level_values(0).unique():
 
 # Save predictions to a CSV file
 prediction_df[['Player', 'Team', 'Pos', 'Predicted_Fantasy_Score']].to_csv('nba_fantasy_predictions_2024_25.csv', index=False)
-
-print("Predictions saved to nba_fantasy_predictions_2024_25.csv")
