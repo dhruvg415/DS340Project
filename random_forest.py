@@ -43,7 +43,7 @@ feature_importance = pd.DataFrame({
 }).sort_values('importance', ascending=False)
 
 print("\nFeature Importance:")
-print(feature_importance)
+print(feature_importance.to_string(index=False))
 
 # Predict for all players
 all_predictions = rf_model.predict(X)
@@ -52,7 +52,7 @@ merged_data['RF_Predicted_Fantasy_Score'] = all_predictions
 # Display top 10 players based on Random Forest predictions
 top_10 = merged_data.nlargest(10, 'RF_Predicted_Fantasy_Score')
 print("\nTop 10 Players based on Random Forest Predictions:")
-print(top_10[['Player', 'Pos', 'Team_x', 'RF_Predicted_Fantasy_Score', 'G']].to_string(index=False))
+print(top_10[['Player', 'Pos', 'Team_x', 'RF_Predicted_Fantasy_Score']].to_string(index=False))
 
 # Save results to CSV
-merged_data[['Player', 'Pos', 'Team_x', 'Predicted_Fantasy_Score', 'RF_Predicted_Fantasy_Score', 'G']].to_csv('rf_fantasy_predictions.csv', index=False)
+merged_data[['Player', 'Pos', 'Team_x', 'Predicted_Fantasy_Score', 'RF_Predicted_Fantasy_Score']].to_csv('rf_fantasy_predictions.csv', index=False)

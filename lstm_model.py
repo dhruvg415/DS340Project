@@ -76,7 +76,7 @@ rankings = prediction_df.groupby('Pos').apply(lambda x: x.sort_values('Predicted
 
 for position in rankings.index.get_level_values(0).unique():
     print(f"\nTop 10 {position}s for 2024-25 Season:")
-    print(rankings.loc[position][['Player', 'Predicted_Fantasy_Score']].head(10))
+    print(rankings.loc[position][['Player', 'Predicted_Fantasy_Score']].head(10).to_string(index=False))
 
 # Save predictions to a CSV file
 prediction_df[['Player', 'Team', 'Pos', 'Predicted_Fantasy_Score']].to_csv('nba_fantasy_predictions_2024_25.csv', index=False)
