@@ -8,15 +8,16 @@ from keras._tf_keras.keras.optimizers import Adam
 
 #Load training data
 train_df = pd.read_csv('nba_2020_2024_merged_stats.csv')
+last_15_days = pd.read_csv('nba_last15days_2024-25.csv')
 
 # Load prediction data
 current_totals = pd.read_csv('nba_2024-25_totals.csv')
 current_advanced = pd.read_csv('nba_2024-25_adv.csv')
 
-# Merge totals and advanced stats FOR 2024-25 SEASON
+# Merge totals and advanced stats for 2024-25 season
 prediction_df = pd.merge(current_totals, current_advanced, on=['Player', 'Season', 'Team', 'Pos'], suffixes=('_totals', '_adv'))
 
-# Calculate Fantasy Points for training data
+# Calculate fantasy points for training data
 def calculate_fantasy_points(df):
     df['Fantasy_Points'] = (
         df['PTS'] +
@@ -29,10 +30,20 @@ def calculate_fantasy_points(df):
     return df
 
 train_df = calculate_fantasy_points(train_df)
-prediction_df = calculate_fantasy_points(prediction_df)
+
+# Create rolling averages for last 15 days
+last_15_days = last_15_days.sort_values(['Player', 'GS'])
+rolling_features = ['PTS', 'TRB', 'AST', 'STL', 'BLK', 'TOV', 'FG%', 'FT%']
+for feature in rolling_features:
+    last_15_days[f'{feature}_rolling_5'] = last_15_days.groupby('Player')[feature].rolling(window=5, min_periods=1).mean().reset_index(0, drop=True)
+
+# Merge last 15 days data with current season data
+prediction_df = pd.merge(prediction_df, last_15_days.groupby('Player').last().reset_index(), on='Player', suffixes=('', '_last15'))
+print(prediction_df.columns)
 
 # Select relevant features for training
 features = ['PTS', 'TRB', 'AST', 'STL', 'BLK', 'TOV', 'FG%', 'FT%', 'PER', 'USG%', 'BPM', 'MP']
+
 X_train = train_df[features]
 y_train = train_df['Fantasy_Points']
 
@@ -65,8 +76,11 @@ X_pred = prediction_df[features]
 # Normalize prediction features using the same scaler
 X_pred_scaled = scaler.transform(X_pred)
 
+X_pred_rolling = prediction_df[rolling_features]
+X_pred_combined = np.hstack((X_pred_scaled, X_pred_rolling))
+
 # Reshape prediction data for LSTM
-X_pred_reshaped = X_pred_scaled.reshape((X_pred_scaled.shape[0], 1, X_pred_scaled.shape[1]))
+X_pred_reshaped = X_pred_combined.reshape((X_pred_combined.shape[0], 1, X_pred_combined.shape[1]))
 
 # Make predictions
 predictions = model.predict(X_pred_reshaped)
