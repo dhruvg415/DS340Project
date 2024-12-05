@@ -11,11 +11,11 @@ last_15_days = pd.read_csv('nba_last15days_2024-25.csv')
 # Merge the datasets
 merged_data = pd.merge(predictions, last_15_days, on='Player', how='inner')
 
-# Select features for the model
+# Feature selection
 features = ['G', 'PTS', 'TRB', 'AST', 'STL', 'BLK', 'TOV', 'FG%', 'FT%', 'TS%', 'MP', 'BPM']
 target = 'Predicted_Fantasy_Score'
 
-# Prepare the data
+# Data preparation
 X = merged_data[features]
 y = merged_data[target]
 
