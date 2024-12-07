@@ -57,7 +57,7 @@ model = Sequential([
 model.compile(optimizer=Adam(learning_rate=0.001), loss='mean_squared_error')
 
 # Train the model
-model.fit(X_train_reshaped, y_train, epochs=200, batch_size=64, validation_split=0.2, verbose=1)
+model.fit(X_train_reshaped, y_train, epochs=100, batch_size=64, validation_split=0.2, verbose=1)
 
 # Ensure consistent feature set with training data
 X_pred = prediction_df[features]
