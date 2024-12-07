@@ -11,8 +11,21 @@ last_15_days = pd.read_csv('nba_last15days_2024-25.csv')
 # Merge the datasets
 merged_data = pd.merge(predictions, last_15_days, on='Player', how='inner', suffixes=('','_new'))
 
+# Calculate per game stats
+merged_data['PTS_pg'] = merged_data['PTS'] / merged_data['G']
+merged_data['TRB_pg'] = merged_data['TRB'] / merged_data['G']
+merged_data['AST_pg'] = merged_data['AST'] / merged_data['G']
+merged_data['STL_pg'] = merged_data['STL'] / merged_data['G']
+merged_data['BLK_pg'] = merged_data['BLK'] / merged_data['G']
+merged_data['TOV_pg'] = merged_data['TOV'] / merged_data['G']
+
+# More efficiency metrics
+merged_data['Scoring_eff'] = merged_data['PTS_pg'] * merged_data['FG%']
+merged_data['Rebound_eff'] = merged_data['TRB_pg'] * merged_data['MP']
+
 # Feature selection
-features = ['G', 'PTS', 'TRB', 'AST', 'STL', 'BLK', 'TOV', 'FG%', 'FT%', 'TS%', 'MP', 'BPM']
+features = ['G', 'PTS', 'TRB', 'AST', 'STL', 'BLK', 'TOV', 'FG%', 'FT%', 'TS%', 'MP', 'BPM',
+            'PTS_pg', 'TRB_pg', 'AST_pg', 'STL_pg', 'BLK_pg', 'TOV_pg', 'Scoring_eff', 'Rebound_eff']
 target = 'Predicted_Fantasy_Score'
 
 # Data preparation
