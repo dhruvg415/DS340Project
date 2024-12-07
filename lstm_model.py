@@ -14,7 +14,9 @@ current_totals = pd.read_csv('nba_2024-25_totals.csv')
 current_advanced = pd.read_csv('nba_2024-25_adv.csv')
 
 # Merge totals and advanced stats FOR 2024-25 SEASON
-prediction_df = pd.merge(current_totals, current_advanced, on=['Player', 'Season', 'Team', 'Pos'], suffixes=('_totals', '_adv'))
+prediction_df = pd.merge(current_totals, current_advanced, on=['Player', 'Season', 'Team', 'Pos'], suffixes=('', '_adv'))
+print(train_df.columns)
+print(prediction_df.columns)
 
 # Calculate Fantasy Points for training data
 def calculate_fantasy_points(df):
@@ -32,7 +34,7 @@ train_df = calculate_fantasy_points(train_df)
 prediction_df = calculate_fantasy_points(prediction_df)
 
 # Select relevant features for training
-features = ['PTS', 'TRB', 'AST', 'STL', 'BLK', 'TOV', 'FG%', 'FT%', 'PER', 'USG%', 'BPM', 'MP']
+features = ['G', 'PTS', 'TRB', 'AST', 'STL', 'BLK', 'TOV', 'FG%', 'FT%', 'PER', 'USG%', 'BPM', 'MP']
 X_train = train_df[features]
 y_train = train_df['Fantasy_Points']
 
@@ -57,7 +59,7 @@ model = Sequential([
 model.compile(optimizer=Adam(learning_rate=0.001), loss='mean_squared_error')
 
 # Train the model
-model.fit(X_train_reshaped, y_train, epochs=100, batch_size=64, validation_split=0.2, verbose=1)
+model.fit(X_train_reshaped, y_train, epochs=200, batch_size=64, validation_split=0.2, verbose=1)
 
 # Ensure consistent feature set with training data
 X_pred = prediction_df[features]
