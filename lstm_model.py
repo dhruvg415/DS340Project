@@ -15,8 +15,6 @@ current_advanced = pd.read_csv('nba_2024-25_adv.csv')
 
 # Merge totals and advanced stats FOR 2024-25 SEASON
 prediction_df = pd.merge(current_totals, current_advanced, on=['Player', 'Season', 'Team', 'Pos'], suffixes=('', '_adv'))
-print(train_df.columns)
-print(prediction_df.columns)
 
 # Calculate Fantasy Points for training data
 def calculate_fantasy_points(df):
